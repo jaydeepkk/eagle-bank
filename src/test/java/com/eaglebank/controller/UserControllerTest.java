@@ -5,6 +5,7 @@ import com.eaglebank.security.JwtTokenProvider;
 import com.eaglebank.service.AuthService;
 import com.eaglebank.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,12 +21,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+
 class UserControllerTest {
     @Autowired private MockMvc mockMvc;
     @MockBean private UserService userService;
     @MockBean private AuthService authService;
-    @MockBean private ObjectMapper objectMapper;
     @MockBean private JwtTokenProvider jwtTokenProvider;
+
 
 
     @Test
