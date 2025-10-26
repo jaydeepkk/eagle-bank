@@ -1,0 +1,484 @@
+openapi: 3.0.3
+info:
+  title: Eagle Bank API
+  version: 1.0.0
+  description: |
+    REST API for Eagle Bank.
+    This API allows users to register, authenticate, create and manage bank accounts, 
+    and perform deposit or withdrawal transactions.
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: auth
+    description: Authentication operations
+  - name: user
+    description: User management
+  - name: account
+    description: Bank account management
+  - name: transaction
+    description: Account transaction management
+
+paths:
+  /v1/auth/login:
+    post:
+      tags: [auth]
+      summary: Authenticate a user and get a JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: JWT token issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/users:
+    post:
+      tags: [user]
+      summary: Create a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/users/{userId}:
+    get:
+      tags: [user]
+      summary: Fetch user details
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            example: usr-123abc
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - user
+      summary: Delete a user by ID
+      description: |
+        Deletes a user account if they have no associated bank accounts.
+        - Returns **204** if deletion successful  
+        - Returns **403** if attempting to delete another user  
+        - Returns **404** if user not found  
+        - Returns **409** if user has linked bank accounts
+      operationId: deleteUserByID
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: userId
+          in: path
+          description: Unique ID of the user
+          required: true
+          schema:
+            type: string
+            example: usr-abc123
+      responses:
+        '204':
+          description: User deleted successfully (No Content)
+        '403':
+          description: Forbidden — user cannot delete another user's account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — user has associated bank accounts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/accounts:
+    post:
+      tags: [account]
+      summary: Create a new bank account
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBankAccountRequest'
+      responses:
+        '201':
+          description: Bank account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankAccountResponse'
+    get:
+      tags: [account]
+      summary: List all user bank accounts
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of bank accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BankAccountResponse'
+
+  /v1/accounts/{accountNumber}:
+    get:
+      tags: [account]
+      summary: Get account by account number
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: accountNumber
+          required: true
+          schema:
+            type: string
+            example: 01012345
+      responses:
+        '200':
+          description: Bank account details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankAccountResponse'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [account]
+      summary: Delete an account
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: accountNumber
+          required: true
+          schema:
+            type: string
+            example: 01012345
+      responses:
+        '204':
+          description: Account deleted
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/accounts/{accountNumber}/transactions:
+    post:
+      tags: [transaction]
+      summary: Create a transaction (deposit or withdrawal)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: accountNumber
+          required: true
+          schema:
+            type: string
+            example: 01012345
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransactionRequest'
+      responses:
+        '201':
+          description: Transaction created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Insufficient funds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags: [transaction]
+      summary: List transactions for an account
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: accountNumber
+          required: true
+          schema:
+            type: string
+            example: 01012345
+      responses:
+        '200':
+          description: List of transactions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListTransactionsResponse'
+
+  /v1/accounts/{accountNumber}/transactions/{transactionId}:
+    get:
+      tags: [transaction]
+      summary: Get a transaction by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: accountNumber
+          required: true
+          schema:
+            type: string
+            example: 01012345
+        - in: path
+          name: transactionId
+          required: true
+          schema:
+            type: string
+            example: tan-abc123
+      responses:
+        '200':
+          description: Transaction details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT access token
+
+    CreateUserRequest:
+      type: object
+      required: [name, address, phoneNumber, email, password]
+      properties:
+        name:
+          type: string
+        address:
+          type: object
+          required: [line1, town, county, postcode]
+          properties:
+            line1: { type: string }
+            town: { type: string }
+            county: { type: string }
+            postcode: { type: string }
+        phoneNumber:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: usr-123abc
+        name:
+          type: string
+        email:
+          type: string
+        phoneNumber:
+          type: string
+        createdTimestamp:
+          type: string
+          format: date-time
+        updatedTimestamp:
+          type: string
+          format: date-time
+
+    CreateBankAccountRequest:
+      type: object
+      required: [name, accountType]
+      properties:
+        name:
+          type: string
+        accountType:
+          type: string
+          enum: [personal]
+
+    BankAccountResponse:
+      type: object
+      properties:
+        accountNumber:
+          type: string
+          example: 01012345
+        sortCode:
+          type: string
+          example: 10-10-10
+        name:
+          type: string
+        accountType:
+          type: string
+        balance:
+          type: number
+          format: double
+        currency:
+          type: string
+          example: GBP
+        createdTimestamp:
+          type: string
+          format: date-time
+        updatedTimestamp:
+          type: string
+          format: date-time
+
+    CreateTransactionRequest:
+      type: object
+      required: [amount, currency, type]
+      properties:
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+          enum: [GBP]
+        type:
+          type: string
+          enum: [deposit, withdrawal]
+        reference:
+          type: string
+
+    TransactionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: tan-abc123
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+          example: GBP
+        type:
+          type: string
+          enum: [deposit, withdrawal]
+        reference:
+          type: string
+        userId:
+          type: string
+          example: usr-123abc
+        createdTimestamp:
+          type: string
+          format: date-time
+
+    ListTransactionsResponse:
+      type: object
+      properties:
+        transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionResponse'
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
